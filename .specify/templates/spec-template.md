@@ -84,11 +84,19 @@
 
 ### Functional Requirements
 
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+- **FR-001**: System MUST [specific capability, e.g., "process historical lottery data"]
+- **FR-002**: System MUST [specific capability, e.g., "generate statistical predictions"]
+- **FR-003**: System MUST include clear disclaimers about lottery randomness
+- **FR-004**: System MUST provide confidence intervals for all predictions
+- **FR-005**: System MUST log responsible gambling warnings
+
+### Ethical & Statistical Requirements
+
+- **ER-001**: System MUST clearly state lottery outcomes are fundamentally random
+- **ER-002**: System MUST include prominent responsible gambling messaging
+- **ER-003**: System MUST use only historical data for model training (no superstition)
+- **ER-004**: System MUST demonstrate statistical significance through backtesting
+- **ER-005**: System MUST prevent overfitting through proper validation techniques
 
 *Example of marking unclear requirements:*
 

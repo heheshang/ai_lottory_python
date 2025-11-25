@@ -49,8 +49,10 @@ description: "Task list template for feature implementation"
 **Purpose**: Project initialization and basic structure
 
 - [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
+- [ ] T002 Initialize Python project with scikit-learn, pandas, numpy dependencies
 - [ ] T003 [P] Configure linting and formatting tools
+- [ ] T004 Setup ethical disclaimer templates and responsible gambling messaging
+- [ ] T005 Configure pytest for >90% coverage requirements
 
 ---
 
@@ -154,6 +156,9 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] TXXX Code cleanup and refactoring
 - [ ] TXXX Performance optimization across all stories
 - [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
+- [ ] TXXX Statistical validation: backtest models against 6+ months historical data
+- [ ] TXXX Ethical compliance review: ensure disclaimers are prominent
+- [ ] TXXX Model explainability verification: confidence intervals and feature importance
 - [ ] TXXX Security hardening
 - [ ] TXXX Run quickstart.md validation
 

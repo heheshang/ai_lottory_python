@@ -1,0 +1,146 @@
+version: '3.8'
+
+services:
+  # Backend API service
+  backend:
+    build:
+      context: .
+      target: backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/lottery_db
+      - ETHICAL_COMPLIANCE_ENABLED=true
+      - MAX_PREDICTION_CONFIDENCE=0.85
+      - RESPONSIBLE_GAMBLING_REQUIRED=true
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data
+    depends_on:
+      - db
+      - redis
+    networks:
+      - lottery-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend service
+  frontend:
+    build:
+      context: .
+      target: frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    environment:
+      - VUE_APP_API_URL=http://localhost:5000/api
+      - VUE_APP_ETHICAL_COMPLIANCE_ENABLED=true
+    depends_on:
+      - backend
+    networks:
+      - lottery-network
+    command: npm run dev
+
+  # Production web server
+  web:
+    build:
+      context: .
+      target: production
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - lottery-network
+    profiles:
+      - production
+
+  # PostgreSQL database
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=lottery_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - lottery-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - lottery-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Monitoring service
+  monitoring:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - lottery-network
+    profiles:
+      - monitoring
+
+  # Ethical compliance monitoring
+  compliance-monitor:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.compliance
+    environment:
+      - MONITOR_API_ENDPOINT=http://backend:5000
+      - ETHICAL_COMPLIANCE_ENABLED=true
+      - MAX_CONFIDENCE_THRESHOLD=0.85
+      - ALERT_ON_VIOLATION=true
+    depends_on:
+      - backend
+    networks:
+      - lottery-network
+    volumes:
+      - ./compliance_logs:/app/logs
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_data:
+  prometheus_data:
+
+networks:
+  lottery-network:
+    driver: bridge

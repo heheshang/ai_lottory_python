@@ -31,7 +31,11 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- **I. Data-Driven Approach**: All algorithms must use historical lottery data only
+- **II. Responsible AI Ethics**: Must include disclaimers about randomness and responsible gambling
+- **III. Statistical Rigor**: Must demonstrate proper cross-validation and overfitting prevention
+- **IV. Transparency & Explainability**: Model must provide interpretable outputs and confidence intervals
+- **V. Continuous Testing & Validation**: Must have >90% test coverage and validation strategy
 
 ## Project Structure
 

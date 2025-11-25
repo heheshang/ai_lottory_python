@@ -1,0 +1,952 @@
+openapi: 3.0.3
+info:
+  title: Lottery Prediction API
+  description: |
+    RESTful API for lottery prediction and analysis services.
+
+    ## Features
+    - Historical lottery data access
+    - Multiple prediction analysis methods
+    - User prediction management
+    - Statistical analysis and trend visualization
+    - Responsible gambling compliance
+
+    ## Ethical Considerations
+    - All predictions include confidence intervals and disclaimers
+    - Maximum confidence scores capped at 85%
+    - Prominent responsible gambling messaging
+    - No guarantees of winning outcomes
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@lottery-prediction.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.lottery-prediction.com/v1
+    description: Production server
+  - url: https://staging-api.lottery-prediction.com/v1
+    description: Staging server
+  - url: http://localhost:5000/v1
+    description: Development server
+
+paths:
+  /lottery-types:
+    get:
+      tags:
+        - Lottery Information
+      summary: Get supported lottery types
+      description: Retrieve list of all supported lottery types with their configurations
+      operationId: getLotteryTypes
+      responses:
+        '200':
+          description: List of lottery types
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LotteryType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /lottery-draws:
+    get:
+      tags:
+        - Historical Data
+      summary: Get historical lottery draws
+      description: Retrieve historical lottery draw data with filtering options
+      operationId: getHistoricalDraws
+      parameters:
+        - name: lottery_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [SUPER_LOTTERY]
+          description: Lottery type code
+          example: SUPER_LOTTERY
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Start date for historical data (YYYY-MM-DD)
+          example: "2023-01-01"
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: End date for historical data (YYYY-MM-DD)
+          example: "2024-01-01"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+          description: Maximum number of draws to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Number of draws to skip (for pagination)
+      responses:
+        '200':
+          description: Historical lottery draw data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      draws:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LotteryDraw'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+                      total_count:
+                        type: integer
+                        example: 156
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /analysis/statistics:
+    get:
+      tags:
+        - Analysis
+      summary: Get lottery statistics analysis
+      description: Generate statistical analysis for specified lottery and date range
+      operationId: getStatisticsAnalysis
+      parameters:
+        - name: lottery_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [SUPER_LOTTERY]
+          example: SUPER_LOTTERY
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: "2023-01-01"
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: "2024-01-01"
+        - name: analysis_types
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [frequency, patterns, trends, correlations]
+          description: Types of analysis to perform
+          example: ["frequency", "patterns"]
+      responses:
+        '200':
+          description: Statistical analysis results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/StatisticsAnalysis'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /predictions/generate:
+    post:
+      tags:
+        - Predictions
+      summary: Generate lottery predictions
+      description: |
+        Generate lottery predictions using specified analysis methods.
+
+        ## Ethical Compliance
+        - All predictions include mandatory disclaimers
+        - Confidence scores are capped at 85%
+        - Responsible gambling messaging is included
+        - No guarantees of winning are provided
+      operationId: generatePrediction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PredictionRequest'
+      responses:
+        '200':
+          description: Prediction generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/PredictionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /predictions/history:
+    get:
+      tags:
+        - Predictions
+      summary: Get user prediction history
+      description: Retrieve user's prediction history with pagination
+      operationId: getPredictionHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lottery_type
+          in: query
+          schema:
+            type: string
+            enum: [SUPER_LOTTERY]
+          description: Filter by lottery type
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by start date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by end date
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Number of predictions per page
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Page offset
+      responses:
+        '200':
+          description: User prediction history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      predictions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserPrediction'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+                      total_count:
+                        type: integer
+                        example: 45
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /predictions/{prediction_id}:
+    get:
+      tags:
+        - Predictions
+      summary: Get specific prediction details
+      description: Retrieve detailed information about a specific prediction
+      operationId: getPredictionById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: prediction_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Prediction ID
+      responses:
+        '200':
+          description: Prediction details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/UserPrediction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /predictions/{prediction_id}/feedback:
+    post:
+      tags:
+        - Predictions
+      summary: Submit prediction feedback
+      description: Submit user feedback for a prediction
+      operationId: submitPredictionFeedback
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: prediction_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PredictionFeedback'
+      responses:
+        '200':
+          description: Feedback submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Feedback submitted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /user/profile:
+    get:
+      tags:
+        - User Management
+      summary: Get user profile
+      description: Retrieve current user's profile information
+      operationId: getUserProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /user/preferences:
+    put:
+      tags:
+        - User Management
+      summary: Update user preferences
+      description: Update user's prediction and interface preferences
+      operationId: updateUserPreferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferences'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Preferences updated successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  schemas:
+    LotteryType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          example: "大乐透"
+        code:
+          type: string
+          example: "SUPER_LOTTERY"
+        number_ranges:
+          type: object
+          example:
+            main_numbers:
+              min: 1
+              max: 35
+              count: 5
+            bonus_numbers:
+              min: 1
+              max: 12
+              count: 2
+        draw_format:
+          type: object
+          example:
+            draw_frequency: "weekly"
+            draw_days: ["tue", "fri"]
+            draw_time: "20:30"
+            timezone: "Asia/Shanghai"
+        country:
+          type: string
+          example: "CN"
+        currency:
+          type: string
+          example: "CNY"
+        is_active:
+          type: boolean
+          example: true
+
+    LotteryDraw:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        lottery_type:
+          $ref: '#/components/schemas/LotteryType'
+        draw_date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        draw_number:
+          type: integer
+          example: 2024008
+        winning_numbers:
+          type: object
+          example:
+            main_numbers: [1, 5, 12, 23, 31]
+            bonus_numbers: [3, 8]
+        jackpot_amount:
+          type: number
+          format: decimal
+          example: 50000000.00
+        winners_count:
+          type: object
+          example:
+            tier_1: 1
+            tier_2: 15
+            tier_3: 200
+
+    PredictionRequest:
+      type: object
+      required:
+        - lottery_type
+        - analysis_methods
+      properties:
+        lottery_type:
+          type: string
+          enum: [SUPER_LOTTERY]
+          example: SUPER_LOTTERY
+        analysis_methods:
+          type: array
+          items:
+            type: string
+            enum: [WEIGHTED_FREQUENCY, MARKOV_CHAINS, ENSEMBLE, AI_ANALYSIS]
+          minItems: 1
+          maxItems: 4
+          example: ["WEIGHTED_FREQUENCY", "AI_ANALYSIS"]
+        prediction_count:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 1
+          example: 3
+        date_range:
+          type: object
+          properties:
+            start_date:
+              type: string
+              format: date
+              example: "2023-01-01"
+            end_date:
+              type: string
+              format: date
+              example: "2024-01-01"
+        custom_parameters:
+          type: object
+          additionalProperties: true
+          description: Custom parameters for specific analysis methods
+
+    PredictionResponse:
+      type: object
+      properties:
+        prediction_id:
+          type: string
+          format: uuid
+        predicted_numbers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PredictedNumbers'
+        confidence_score:
+          type: number
+          minimum: 0
+          maximum: 0.85
+          example: 0.73
+        confidence_intervals:
+          type: object
+          example:
+            main_numbers: [[1, 8], [9, 15], [16, 22], [23, 29], [30, 35]]
+            bonus_numbers: [[1, 6], [7, 12]]
+        analysis_metadata:
+          type: object
+          properties:
+            methods_used:
+              type: array
+              items:
+                type: string
+              example: ["WEIGHTED_FREQUENCY", "AI_ANALYSIS"]
+            method_weights:
+              type: object
+              example:
+                WEIGHTED_FREQUENCY: 0.6
+                AI_ANALYSIS: 0.4
+            sample_size:
+              type: integer
+              example: 156
+            statistical_significance:
+              type: number
+              example: 0.73
+        explanation:
+          type: string
+          example: "Analysis indicates hot numbers 7, 14, 23 have appeared 73% more frequently than average in the last 6 months..."
+        limitations:
+          type: array
+          items:
+            type: string
+          example:
+            - "Based on historical data only"
+            - "Random nature means patterns may not continue"
+            - "Sample size limitations affect reliability"
+        responsible_gambling_message:
+          type: string
+          example: "⚠️ Lottery outcomes are entirely random. Please gamble responsibly."
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    PredictedNumbers:
+      type: object
+      properties:
+        main_numbers:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 35
+          minItems: 5
+          maxItems: 5
+          uniqueItems: true
+          example: [3, 11, 17, 24, 33]
+        bonus_numbers:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 12
+          minItems: 2
+          maxItems: 2
+          uniqueItems: true
+          example: [2, 9]
+
+    UserPrediction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        lottery_type:
+          $ref: '#/components/schemas/LotteryType'
+        predicted_numbers:
+          $ref: '#/components/schemas/PredictedNumbers'
+        confidence_score:
+          type: number
+          minimum: 0
+          maximum: 0.85
+          example: 0.73
+        confidence_intervals:
+          type: object
+        analysis_metadata:
+          type: object
+        user_feedback:
+          type: object
+          properties:
+            rating:
+              type: integer
+              minimum: 1
+              maximum: 5
+              nullable: true
+            comments:
+              type: string
+              nullable: true
+            helpfulness:
+              type: string
+              enum: [helpful, neutral, not_helpful]
+              nullable: true
+        actual_accuracy:
+          type: number
+          nullable: true
+          example: 0.4
+        is_bookmarked:
+          type: boolean
+          example: false
+        prediction_source:
+          type: string
+          enum: [web, api, batch]
+          example: web
+        created_at:
+          type: string
+          format: date-time
+
+    PredictionFeedback:
+      type: object
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 4
+        comments:
+          type: string
+          maxLength: 500
+          example: "Helpful analysis, clear explanations"
+        helpfulness:
+          type: string
+          enum: [helpful, neutral, not_helpful]
+          example: helpful
+
+    StatisticsAnalysis:
+      type: object
+      properties:
+        analysis_period:
+          type: object
+          properties:
+            start_date:
+              type: string
+              format: date
+            end_date:
+              type: string
+              format: date
+            total_draws:
+              type: integer
+        frequency_analysis:
+          type: object
+          properties:
+            hot_numbers:
+              type: array
+              items:
+                type: integer
+              example: [7, 14, 23, 31, 35]
+            cold_numbers:
+              type: array
+              items:
+                type: integer
+              example: [2, 11, 19, 26, 34]
+            frequency_distribution:
+              type: object
+              additionalProperties:
+                type: integer
+        pattern_analysis:
+          type: object
+          properties:
+            consecutive_numbers:
+              type: object
+              properties:
+                count:
+                  type: integer
+                percentage:
+                  type: number
+            odd_even_ratio:
+              type: object
+              properties:
+                odd:
+                  type: integer
+                even:
+                  type: integer
+        trend_analysis:
+          type: object
+          properties:
+            number_trends:
+              type: object
+              additionalProperties:
+                type: string
+                enum: [increasing, decreasing, stable]
+            pattern_consistency:
+              type: number
+              minimum: 0
+              maximum: 1
+        statistical_significance:
+          type: number
+          example: 0.73
+        confidence_level:
+          type: number
+          example: 0.95
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          example: "user123"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        created_at:
+          type: string
+          format: date-time
+        last_active:
+          type: string
+          format: date-time
+        risk_tolerance:
+          type: string
+          enum: [conservative, moderate, aggressive]
+          example: moderate
+        max_predictions_daily:
+          type: integer
+          example: 50
+        responsible_gambling_acknowledged:
+          type: boolean
+          example: true
+
+    UserPreferences:
+      type: object
+      properties:
+        preferred_analysis_methods:
+          type: array
+          items:
+            type: string
+            enum: [WEIGHTED_FREQUENCY, MARKOV_CHAINS, ENSEMBLE, AI_ANALYSIS]
+          example: ["WEIGHTED_FREQUENCY", "AI_ANALYSIS"]
+        default_confidence_threshold:
+          type: number
+          minimum: 0.1
+          maximum: 1.0
+          example: 0.7
+        notifications_enabled:
+          type: boolean
+          example: true
+        theme:
+          type: string
+          enum: [light, dark]
+          example: light
+        risk_tolerance:
+          type: string
+          enum: [conservative, moderate, aggressive]
+          example: moderate
+
+    Pagination:
+      type: object
+      properties:
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+        total_pages:
+          type: integer
+          example: 3
+        current_page:
+          type: integer
+          example: 1
+        has_next:
+          type: boolean
+          example: true
+        has_previous:
+          type: boolean
+          example: false
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Invalid input parameters"
+            details:
+              type: array
+              items:
+                type: string
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Invalid lottery type specified"
+              details: ["lottery_type must be one of: SUPER_LOTTERY"]
+
+    Unauthorized:
+      description: Unauthorized - invalid or missing authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "UNAUTHORIZED"
+              message: "Authentication required"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "Prediction not found"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "RATE_LIMIT_EXCEEDED"
+              message: "Too many requests. Please try again later."
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "INTERNAL_ERROR"
+              message: "An unexpected error occurred"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT token for authentication"
+
+tags:
+  - name: Lottery Information
+    description: Information about supported lottery types
+  - name: Historical Data
+    description: Access to historical lottery draw data
+  - name: Analysis
+    description: Statistical analysis and trend identification
+  - name: Predictions
+    description: Prediction generation and management
+  - name: User Management
+    description: User profile and preference management
