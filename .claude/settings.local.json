@@ -12,7 +12,8 @@
       "Bash(flask db init:*)",
       "Bash(pip install:*)",
       "Bash(set FLASK_APP=run.py:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

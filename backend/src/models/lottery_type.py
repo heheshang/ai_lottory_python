@@ -3,10 +3,17 @@ Lottery type model for defining different lottery games
 """
 from sqlalchemy import Column, String, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSON
+from sqlalchemy.orm import relationship
 
 from .base import BaseModel
 from .associations import lottery_type_analysis_methods
-from backend.app import db
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+try:
+    from database import db
+except ImportError:
+    from flask_sqlalchemy import SQLAlchemy
+    db = SQLAlchemy()
 
 
 class LotteryType(BaseModel):

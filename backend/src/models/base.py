@@ -8,8 +8,16 @@ from sqlalchemy import Column, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 
-# Import db from the main app module to avoid circular imports
-from backend.app import db
+# Import db from the database module to avoid circular imports
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+try:
+    from database import db
+except ImportError:
+    # Fallback for migration environment
+    from flask_sqlalchemy import SQLAlchemy
+    db = SQLAlchemy()
 
 class BaseModel(db.Model):
     """Base model class with common fields"""
